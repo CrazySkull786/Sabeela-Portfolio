@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<!--
+  SECURITY NOTES (static front-end, read this before deploying)
+  ----------------------------------------------------------------
+  This is a static, self-contained document (no backend, no forms that
+  transmit data anywhere). The measures below are what a static file
+  CAN enforce on its own:
+    - Content-Security-Policy meta tag restricts script/style/font/img
+      origins to 'self' plus the two Google Fonts hosts actually used.
+    - referrer-policy is set to strip the referrer sent to third parties.
+    - Every off-site link (LinkedIn, mailto) uses rel="noopener noreferrer"
+      and target="_blank" to prevent tab-nabbing / window.opener access.
+    - No inline event handlers (onclick="") anywhere; all behaviour is
+      wired up in the single external-equivalent <script> at the bottom
+      via addEventListener, so a future stricter CSP (script-src 'self'
+      without 'unsafe-inline') keeps working unchanged.
+    - No third-party JS, no analytics beacons, no eval/innerHTML from
+      untrusted input (the only dynamic text is a hard-coded array below).
+    - Contact is a mailto: / tel: link, not a form — so there is no
+      client-side input to sanitize and nothing to inject into.
+  Things a static HTML file CANNOT enforce and that must be set by
+  whoever hosts it (server or CDN config, not in this file):
+    - HTTPS + HSTS (Strict-Transport-Security header)
+    - X-Content-Type-Options: nosniff
+    - X-Frame-Options / frame-ancestors (CSP meta can't set frame-ancestors)
+    - Real CSP delivered as an HTTP header (meta CSP is a good-faith
+      backstop, not a full replacement)
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'self';">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Sabeela Qureshi — SOC Analyst</title>
+<meta name="description" content="Sabeela Qureshi — SOC Analyst specializing in threat detection, SIEM deployment, and security automation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0E14;
+    --panel:#10161D;
+    --panel-alt:#141C25;
+    --border:#212B36;
+    --border-bright:#33424F;
+    --text:#E7EDF3;
+    --text-dim:#8996A6;
+    --text-faint:#5B6B7A;
+    --cyan:#4FD1C5;
+    --amber:#F0A868;
+    --red:#E5697A;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'Space Grotesk', sans-serif;
+    --maxw: 1120px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.55;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size:64px 64px;
+    background-attachment:fixed;
+    background-position:center;
+  }
+  a{color:inherit;}
+  a:focus-visible, button:focus-visible, summary:focus-visible{
+    outline:2px solid var(--cyan);
+    outline-offset:3px;
+    border-radius:2px;
+  }
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 28px;}
+  .mono{font-family:var(--mono);}
+
+  /* ---------- NAV ---------- */
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(10,14,20,0.86);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+  }
+  nav{
+    max-width:var(--maxw); margin:0 auto; padding:16px 28px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .brand{
+    font-family:var(--mono); font-size:15px; color:var(--cyan);
+    letter-spacing:0.02em; text-decoration:none; display:flex; align-items:center; gap:8px;
+  }
+  .brand .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);
+    box-shadow:0 0 8px var(--cyan); flex:none;}
+  .navlinks{display:flex; gap:28px; list-style:none; margin:0; padding:0;}
+  .navlinks a{
+    font-family:var(--mono); font-size:13px; text-decoration:none; color:var(--text-dim);
+    transition:color .15s ease; padding:4px 0; border-bottom:1px solid transparent;
+  }
+  .navlinks a:hover{color:var(--text); border-color:var(--border-bright);}
+  .navtoggle{
+    display:none; background:none; border:1px solid var(--border-bright); color:var(--text);
+    width:38px; height:38px; border-radius:4px; cursor:pointer; font-family:var(--mono);
+  }
+  @media (max-width:760px){
+    .navlinks{
+      position:absolute; top:100%; left:0; right:0; background:var(--panel);
+      border-bottom:1px solid var(--border); flex-direction:column; gap:0;
+      max-height:0; overflow:hidden; transition:max-height .25s ease;
+    }
+    .navlinks.open{max-height:400px;}
+    .navlinks a{padding:14px 28px; border-bottom:1px solid var(--border); width:100%;}
+    .navtoggle{display:block;}
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{padding:96px 0 72px; position:relative;}
+  .hero-grid{display:grid; grid-template-columns:1.15fr 0.85fr; gap:48px; align-items:start;}
+  @media (max-width:860px){.hero-grid{grid-template-columns:1fr;}}
+  .eyebrow-tag{
+    font-family:var(--mono); font-size:12px; color:var(--amber);
+    border:1px solid var(--border-bright); background:var(--panel);
+    display:inline-flex; align-items:center; gap:8px; padding:5px 10px; border-radius:3px;
+    margin-bottom:22px;
+  }
+  .eyebrow-tag::before{content:''; width:6px; height:6px; background:var(--amber); border-radius:50%; box-shadow:0 0 6px var(--amber);}
+  h1{
+    font-size:clamp(2.4rem, 5vw, 3.6rem); line-height:1.06; margin:0 0 18px;
+    font-weight:700; letter-spacing:-0.01em;
+  }
+  .hero p.lede{color:var(--text-dim); font-size:17px; max-width:52ch; margin:0 0 30px;}
+  .hero-actions{display:flex; gap:14px; flex-wrap:wrap;}
+  .btn{
+    font-family:var(--mono); font-size:13.5px; padding:12px 20px; border-radius:4px;
+    text-decoration:none; display:inline-flex; align-items:center; gap:8px;
+    border:1px solid var(--border-bright); transition:all .15s ease; cursor:pointer;
+  }
+  .btn-primary{background:var(--cyan); color:#06232160; color:#04181A; border-color:var(--cyan); font-weight:600;}
+  .btn-primary:hover{background:#68e0d5;}
+  .btn-ghost{background:transparent; color:var(--text);}
+  .btn-ghost:hover{border-color:var(--cyan); color:var(--cyan);}
+  .contact-chips{display:flex; flex-wrap:wrap; gap:10px; margin-top:28px;}
+  .chip{
+    font-family:var(--mono); font-size:12px; color:var(--text-dim); border:1px solid var(--border);
+    padding:6px 10px; border-radius:3px; display:inline-flex; align-items:center; gap:6px;
+    background:var(--panel);
+  }
+  .chip button{background:none; border:none; color:var(--text-faint); cursor:pointer; font-family:var(--mono); font-size:11px; padding:0;}
+  .chip button:hover{color:var(--cyan);}
+
+  /* terminal panel */
+  .terminal{
+    background:var(--panel); border:1px solid var(--border-bright); border-radius:6px;
+    overflow:hidden; box-shadow:0 30px 60px -30px rgba(0,0,0,.6);
+  }
+  .terminal-bar{
+    display:flex; align-items:center; gap:7px; padding:10px 14px;
+    border-bottom:1px solid var(--border); background:var(--panel-alt);
+  }
+  .terminal-bar span{width:10px; height:10px; border-radius:50%; display:inline-block;}
+  .terminal-bar .r{background:#4a3336;} .terminal-bar .y{background:#4a4230;} .terminal-bar .g{background:#2f4436;}
+  .terminal-bar .path{margin-left:8px; font-family:var(--mono); font-size:11.5px; color:var(--text-faint);}
+  .terminal-body{padding:20px 18px; font-family:var(--mono); font-size:13.5px; min-height:230px;}
+  .term-line{margin:0 0 10px; color:var(--text-dim);}
+  .term-line .prompt{color:var(--cyan);}
+  .term-line .out{color:var(--text); display:block; margin:4px 0 0 0;}
+  .caret{display:inline-block; width:8px; height:15px; background:var(--cyan); vertical-align:-3px; animation:blink 1s steps(1) infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  /* ---------- SECTIONS ---------- */
+  section{padding:64px 0; border-top:1px solid var(--border);}
+  .section-head{display:flex; align-items:baseline; justify-content:space-between; gap:20px; margin-bottom:36px; flex-wrap:wrap;}
+  .section-head h2{font-size:1.7rem; margin:0; font-weight:700;}
+  .section-index{font-family:var(--mono); font-size:12px; color:var(--text-faint);}
+  .section-lede{color:var(--text-dim); max-width:64ch; margin:-24px 0 36px;}
+
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:26px;
+    position:relative;
+  }
+  .panel::before, .panel::after{
+    content:''; position:absolute; width:10px; height:10px; border-color:var(--border-bright); border-style:solid;
+  }
+  .panel::before{top:-1px; left:-1px; border-width:1px 0 0 1px;}
+  .panel::after{bottom:-1px; right:-1px; border-width:0 1px 1px 0;}
+
+  /* Experience timeline */
+  .role{display:grid; grid-template-columns:200px 1fr; gap:28px; padding:28px 0; border-top:1px solid var(--border);}
+  .role:first-of-type{border-top:none; padding-top:0;}
+  @media (max-width:700px){.role{grid-template-columns:1fr; gap:10px;}}
+  .role-meta{font-family:var(--mono); font-size:12.5px; color:var(--text-faint);}
+  .role-title{font-size:1.15rem; font-weight:600; margin:0 0 2px;}
+  .role-org{color:var(--amber); font-family:var(--mono); font-size:13px; margin:0 0 14px;}
+  .role ul{margin:0; padding-left:18px; color:var(--text-dim); font-size:14.5px;}
+  .role li{margin-bottom:8px;}
+  .sev{
+    display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:0.03em;
+    padding:3px 7px; border-radius:3px; margin-top:8px;
+  }
+  .sev-onsite{background:rgba(79,209,197,0.12); color:var(--cyan); border:1px solid rgba(79,209,197,0.35);}
+  .sev-remote{background:rgba(240,168,104,0.12); color:var(--amber); border:1px solid rgba(240,168,104,0.35);}
+
+  /* Projects */
+  .proj-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
+  @media (max-width:860px){.proj-grid{grid-template-columns:1fr;}}
+  .proj-card{background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:22px; display:flex; flex-direction:column; gap:12px;}
+  .proj-card h3{margin:0; font-size:1.02rem;}
+  .proj-stack{font-family:var(--mono); font-size:11px; color:var(--cyan);}
+  .proj-card p{margin:0; color:var(--text-dim); font-size:14px;}
+  .proj-badge{font-family:var(--mono); font-size:10.5px; color:var(--amber); border:1px solid rgba(240,168,104,.35); background:rgba(240,168,104,.08); padding:3px 7px; border-radius:3px; align-self:flex-start;}
+
+  /* Certifications ledger */
+  .ledger{width:100%; border-collapse:collapse; font-size:14px;}
+  .ledger th{
+    text-align:left; font-family:var(--mono); font-size:11px; color:var(--text-faint);
+    text-transform:uppercase; letter-spacing:.06em; padding:0 14px 12px; font-weight:500;
+    border-bottom:1px solid var(--border-bright);
+  }
+  .ledger td{padding:14px; border-bottom:1px solid var(--border); vertical-align:top;}
+  .ledger tr:last-child td{border-bottom:none;}
+  .ledger td.date{font-family:var(--mono); color:var(--text-faint); white-space:nowrap; font-size:12.5px;}
+  .ledger td.name{color:var(--text); font-weight:500;}
+  .ledger td.issuer{color:var(--text-dim);}
+
+  /* Skills matrix */
+  .skill-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:18px;}
+  @media (max-width:760px){.skill-grid{grid-template-columns:1fr;}}
+  .skill-cat{background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:20px;}
+  .skill-cat h4{margin:0 0 12px; font-size:13px; font-family:var(--mono); color:var(--cyan);}
+  .tag-row{display:flex; flex-wrap:wrap; gap:8px;}
+  .tag{font-size:12.5px; font-family:var(--mono); color:var(--text-dim); border:1px solid var(--border-bright); padding:5px 9px; border-radius:3px;}
+
+  /* About / summary */
+  .about-grid{display:grid; grid-template-columns:1.4fr 1fr; gap:40px;}
+  @media (max-width:860px){.about-grid{grid-template-columns:1fr;}}
+  .stat{border-top:1px solid var(--border); padding:16px 0;}
+  .stat:first-child{border-top:none; padding-top:0;}
+  .stat .num{font-family:var(--mono); color:var(--cyan); font-size:1.5rem; display:block;}
+  .stat .lab{color:var(--text-dim); font-size:13px;}
+
+  /* Achievements */
+  .achv-list{list-style:none; margin:0; padding:0; display:grid; gap:14px;}
+  .achv-list li{display:flex; gap:14px; padding:16px; background:var(--panel); border:1px solid var(--border); border-radius:6px;}
+  .achv-list .mark{color:var(--amber); font-family:var(--mono); flex:none;}
+
+  /* Education */
+  .edu-card{display:flex; justify-content:space-between; gap:24px; flex-wrap:wrap;}
+  .edu-card .gpa{font-family:var(--mono); color:var(--cyan); font-size:1.3rem;}
+
+  /* Contact / footer */
+  footer{padding:70px 0 40px; text-align:center;}
+  footer h2{font-size:2rem; margin:0 0 14px;}
+  footer p{color:var(--text-dim); max-width:48ch; margin:0 auto 30px;}
+  .footer-actions{display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-bottom:50px;}
+  .foot-meta{font-family:var(--mono); font-size:12px; color:var(--text-faint); border-top:1px solid var(--border); padding-top:24px;}
+
+  ::selection{background:rgba(79,209,197,0.28); color:#fff;}
+</style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a class="brand" href="#top"><span class="dot"></span>SQ_soc-log</a>
+    <ul class="navlinks" id="navlinks">
+      <li><a href="#about">About</a></li>
+      <li><a href="#experience">Experience</a></li>
+      <li><a href="#projects">Projects</a></li>
+      <li><a href="#skills">Skills</a></li>
+      <li><a href="#certifications">Certifications</a></li>
+      <li><a href="#education">Education</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+    <button class="navtoggle mono" id="navtoggle" aria-label="Toggle menu" aria-expanded="false">≡</button>
+  </nav>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero" style="border-top:none;">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="eyebrow-tag">available for SOC / threat-detection roles</span>
+        <h1>Sabeela Qureshi</h1>
+        <p class="lede">SOC Analyst focused on threat detection and security automation — deploying Wazuh SIEM, integrating pfSense firewalls, and building alert-triage pipelines with n8n.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://www.linkedin.com/in/sabeela-qureshi-b25484291/" target="_blank" rel="noopener noreferrer">View LinkedIn profile</a>
+          <a class="btn btn-ghost" href="#experience">See field work</a>
+          <a class="btn btn-ghost" href="mailto:sabeelakamran786@gmail.com" rel="noopener noreferrer">Email me</a>
+        </div>
+        <div class="contact-chips">
+          <span class="chip">📍 Lahore, Pakistan</span>
+          <span class="chip">✉ sabeelakamran786@gmail.com <button data-copy="sabeelakamran786@gmail.com" title="Copy email">copy</button></span>
+          <span class="chip">☎ 0336 6337442 <button data-copy="03366337442" title="Copy number">copy</button></span>
+        </div>
+      </div>
+
+      <div class="terminal" aria-hidden="false">
+        <div class="terminal-bar">
+          <span class="r"></span><span class="y"></span><span class="g"></span>
+          <span class="path">sabeela@soc-workstation: ~</span>
+        </div>
+        <div class="terminal-body" id="termBody"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Signal summary</h2>
+        <span class="section-index mono">01 / profile</span>
+      </div>
+      <div class="about-grid">
+        <div class="panel">
+          <p style="margin:0; color:var(--text-dim); font-size:15px;">
+            ISC2-certified cybersecurity analyst with hands-on SOC experience deploying Wazuh SIEM, integrating pfSense firewalls, and automating alert workflows with n8n. Completed a two-month onsite internship (Tameer-e-Mustaqbil Program, DWP Group) following a structured Cyber Training Program spanning SIEM, EDR, forensics, and malware analysis — plus five structured SOC tasks covering real-time threat detection, malware analysis, and File Integrity Monitoring during an internship at ITsolera.
+          </p>
+          <p style="color:var(--text-dim); font-size:15px;">
+            Comfortable correlating network and endpoint events, applying geo-blocking rules, and identifying indicators of compromise, with a track record of building automation that measurably reduces analyst workload.
+          </p>
+        </div>
+        <div>
+          <div class="stat"><span class="num">2</span><span class="lab">structured SOC internships completed (DWP Group, ITsolera)</span></div>
+          <div class="stat"><span class="num">5</span><span class="lab">operational SOC tasks delivered at ITsolera — SIEM, FIM, firewall integration, malware analysis, automation</span></div>
+          <div class="stat"><span class="num">3+</span><span class="lab">organizations covered in independent OSINT threat-intel reporting</span></div>
+          <div class="stat"><span class="num">CC</span><span class="lab">ISC2 Certified in Cybersecurity, Nov 2025</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXPERIENCE -->
+  <section id="experience">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Field operations</h2>
+        <span class="section-index mono">02 / internships</span>
+      </div>
+
+      <div class="panel">
+        <div class="role">
+          <div class="role-meta">Jul – Sep 2026<br>Onsite</div>
+          <div>
+            <h3 class="role-title">Cybersecurity Intern</h3>
+            <p class="role-org">DWP Group — Tameer-e-Mustaqbil Program</p>
+            <ul>
+              <li>Built a foundational base across Network+, Linux fundamentals, and AWS Solutions Architect concepts to support day-to-day SOC systems and networking work.</li>
+              <li>Practiced log parsing and search fundamentals using regex and Elasticsearch, including custom log ingestion pipelines and Winlogbeat-based data collection.</li>
+              <li>Gained hands-on exposure to SIEM platforms (Elastic SIEM, IBM QRadar, AT&amp;T USM Anywhere) and EDR tooling (CrowdStrike Falcon, osquery), mapping adversary behavior to MITRE ATT&amp;CK.</li>
+              <li>Studied OWASP Top 10 attack classes (SQL injection, XSS, IDOR, SSRF) and practiced exploit development against vulnerable lab targets.</li>
+              <li>Learned Windows and Linux forensic artifact locations and performed network forensics with Wireshark and memory forensics with Volatility.</li>
+              <li>Practiced static and dynamic malware analysis and authored detection rules using YARA and SIGMA.</li>
+            </ul>
+            <span class="sev sev-onsite">CTP · presentation-gated curriculum</span>
+          </div>
+        </div>
+
+        <div class="role">
+          <div class="role-meta">2025</div>
+          <div>
+            <h3 class="role-title">SOC Analyst Intern</h3>
+            <p class="role-org">ITsolera</p>
+            <ul>
+              <li>Deployed and configured Wazuh SIEM from scratch — centralized log aggregation across multiple endpoints with zero pre-built templates.</li>
+              <li>Implemented File Integrity Monitoring in Wazuh, detecting unauthorized file changes and reducing mean time to detect.</li>
+              <li>Integrated pfSense firewall with Wazuh to correlate network-level and endpoint events into a unified view of threats.</li>
+              <li>Hardened the network perimeter with geo-blocking and malicious IP/domain filtering via pfSense.</li>
+              <li>Conducted structured malware analysis on live samples, extracting IoCs and mapping behavior to MITRE ATT&amp;CK.</li>
+              <li>Built a Wazuh + n8n automation pipeline that auto-triaged and routed alerts, cutting analyst response overhead.</li>
+            </ul>
+            <span class="sev sev-remote">5 structured SOC tasks</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROJECTS -->
+  <section id="projects">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Projects &amp; simulations</h2>
+        <span class="section-index mono">03 / independent work</span>
+      </div>
+      <div class="proj-grid">
+        <div class="proj-card">
+          <span class="proj-badge">Threat Intel</span>
+          <h3>OSINT Intelligence Reporting</h3>
+          <p class="proj-stack">Maltego · Shodan · OSINT Framework</p>
+          <p>Conducted OSINT assessments on three-plus publicly disclosed organizations, producing structured reports on domain exposure, employee digital footprints, and public asset risk — mapped to actionable remediation steps.</p>
+        </div>
+        <div class="proj-card">
+          <span class="proj-badge">Adversary Emulation</span>
+          <h3>MITRE ATT&amp;CK Mapping</h3>
+          <p class="proj-stack">MITRE ATT&CK Navigator</p>
+          <p>Mapped ten-plus real-world attack scenarios to ATT&amp;CK tactics and techniques, producing annotated technique matrices used to support threat-hunting hypotheses and applied directly in the ITsolera malware analysis tasks.</p>
+        </div>
+        <div class="proj-card">
+          <span class="proj-badge">1st place</span>
+          <h3>Smart Home &amp; IoT Security</h3>
+          <p class="proj-stack">C / C++ · Embedded systems · Sensor integration</p>
+          <p>Engineered a real-time IoT system processing live sensor data with sub-second response — awarded first place at the University of Lahore 2023 Project Exhibition, ahead of twenty-plus competing teams.</p>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:20px;">
+        <div class="role" style="grid-template-columns:200px 1fr; border-top:none; padding-top:0;">
+          <div class="role-meta">Jul – Aug 2025</div>
+          <div>
+            <h3 class="role-title">Cyber Analyst Job Simulation</h3>
+            <p class="role-org">Deloitte Australia — via Forage</p>
+            <p style="color:var(--text-dim); font-size:14.5px; margin:0;">Completed a professional cyber simulation covering threat analysis and advisory workflows modeled on Deloitte's real SOC engagement process.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SKILLS -->
+  <section id="skills">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Technical skills</h2>
+        <span class="section-index mono">04 / capability matrix</span>
+      </div>
+      <div class="skill-grid">
+        <div class="skill-cat">
+          <h4>SIEM &amp; detection</h4>
+          <div class="tag-row">
+            <span class="tag">Wazuh</span><span class="tag">Elastic SIEM</span><span class="tag">IBM QRadar</span>
+            <span class="tag">AT&amp;T USM Anywhere</span><span class="tag">Log analysis</span><span class="tag">FIM</span><span class="tag">Real-time alerting</span>
+          </div>
+        </div>
+        <div class="skill-cat">
+          <h4>Network security</h4>
+          <div class="tag-row">
+            <span class="tag">pfSense</span><span class="tag">Firewall rules</span><span class="tag">Geo-blocking</span>
+            <span class="tag">IP / domain filtering</span><span class="tag">Network+</span>
+          </div>
+        </div>
+        <div class="skill-cat">
+          <h4>Threat intelligence</h4>
+          <div class="tag-row">
+            <span class="tag">OSINT</span><span class="tag">MITRE ATT&amp;CK mapping</span><span class="tag">IoC extraction</span>
+            <span class="tag">Malware analysis</span><span class="tag">YARA</span><span class="tag">SIGMA</span>
+          </div>
+        </div>
+        <div class="skill-cat">
+          <h4>Security automation</h4>
+          <div class="tag-row">
+            <span class="tag">n8n</span><span class="tag">Alert-triage automation</span><span class="tag">Workflow orchestration</span>
+          </div>
+        </div>
+        <div class="skill-cat">
+          <h4>Digital forensics</h4>
+          <div class="tag-row">
+            <span class="tag">Wireshark</span><span class="tag">Volatility</span><span class="tag">Windows/Linux artifact analysis</span>
+          </div>
+        </div>
+        <div class="skill-cat">
+          <h4>Penetration testing</h4>
+          <div class="tag-row">
+            <span class="tag">Metasploit (beginner)</span><span class="tag">OWASP Top 10</span><span class="tag">Recon (active &amp; passive)</span>
+          </div>
+        </div>
+        <div class="skill-cat">
+          <h4>Systems &amp; programming</h4>
+          <div class="tag-row">
+            <span class="tag">Linux (CLI)</span><span class="tag">Windows</span><span class="tag">C</span><span class="tag">C++</span><span class="tag">Scripting basics</span>
+          </div>
+        </div>
+        <div class="skill-cat">
+          <h4>Reporting</h4>
+          <div class="tag-row">
+            <span class="tag">Structured intel reports</span><span class="tag">Incident documentation</span><span class="tag">MS Word</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CERTIFICATIONS -->
+  <section id="certifications">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Certifications &amp; training</h2>
+        <span class="section-index mono">05 / credential ledger</span>
+      </div>
+      <div class="panel" style="padding:8px 26px 4px; overflow-x:auto;">
+        <table class="ledger">
+          <thead><tr><th>Date</th><th>Credential</th><th>Issuer</th></tr></thead>
+          <tbody>
+            <tr><td class="date">Nov 2025</td><td class="name">ISC2 Certified in Cybersecurity (CC)</td><td class="issuer">ISC2</td></tr>
+            <tr><td class="date">2026</td><td class="name">Cyber Training Program (CTP)</td><td class="issuer">DWP Group — Tameer-e-Mustaqbil Internship</td></tr>
+            <tr><td class="date">Aug 2025</td><td class="name">Linux 100 — Fundamental Course</td><td class="issuer">Linux Foundation</td></tr>
+            <tr><td class="date">Oct 2024 – Feb 2025</td><td class="name">Computer Communication &amp; Networking (CCN)</td><td class="issuer">Coursework</td></tr>
+            <tr><td class="date">Sep 2024 – Jan 2025</td><td class="name">Operating Systems</td><td class="issuer">Coursework</td></tr>
+            <tr><td class="date">Ongoing</td><td class="name">Microsoft Office Specialist — Word 2019 Associate</td><td class="issuer">Microsoft</td></tr>
+            <tr><td class="date">2021 – 2023</td><td class="name">Robotics Programme — Certificate of Distinction</td><td class="issuer">Punjab College</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- EDUCATION -->
+  <section id="education">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Education</h2>
+        <span class="section-index mono">06 / academic record</span>
+      </div>
+      <div class="panel edu-card">
+        <div>
+          <h3 style="margin:0 0 4px; font-size:1.15rem;">BSCS — Bachelor of Science in Computer Science</h3>
+          <p class="role-org" style="margin:0 0 10px;">Bahria University, Lahore</p>
+          <p style="color:var(--text-dim); font-size:14px; margin:0;">Oct 2023 – Dec 2027 · Relevant coursework: Operating Systems, Networking, Databases</p>
+        </div>
+        <div style="text-align:right;">
+          <span class="gpa mono">3.5 / 4.0</span><br>
+          <span style="color:var(--text-faint); font-size:12px; font-family:var(--mono);">current GPA</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACHIEVEMENTS -->
+  <section id="achievements">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Achievements</h2>
+        <span class="section-index mono">07 / recognition</span>
+      </div>
+      <ul class="achv-list">
+        <li><span class="mark">►</span><span>1st Place — Project Exhibition, University of Lahore (2023): a real-time IoT system, ahead of twenty-plus competing teams.</span></li>
+        <li><span class="mark">►</span><span>Certificate of Merit for Academic Excellence — Lady Maclagan School (2019–2021).</span></li>
+        <li><span class="mark">►</span><span>Volunteer Team Protocol Lead — Codeex '25: coordinated event operations, recognized with a Certificate of Appreciation.</span></li>
+        <li><span class="mark">►</span><span>Certificate of Distinction — Robotics Programme, Punjab College (2021–2023).</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <footer id="contact">
+    <div class="wrap">
+      <h2>Let's talk threats, not small talk.</h2>
+      <p>Open to SOC analyst, threat detection, and security automation roles. Reach out directly or connect on LinkedIn.</p>
+      <div class="footer-actions">
+        <a class="btn btn-primary" href="https://www.linkedin.com/in/sabeela-qureshi-b25484291/" target="_blank" rel="noopener noreferrer">Connect on LinkedIn</a>
+        <a class="btn btn-ghost" href="mailto:sabeelakamran786@gmail.com" rel="noopener noreferrer">sabeelakamran786@gmail.com</a>
+        <a class="btn btn-ghost" href="tel:03366337442" rel="noopener noreferrer">0336 6337442</a>
+      </div>
+      <div class="foot-meta wrap">
+        Lahore, Pakistan · Built as a static, dependency-free document — no tracking, no third-party scripts, no data leaves this page.
+      </div>
+    </div>
+  </footer>
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  // Mobile nav toggle
+  var toggle = document.getElementById('navtoggle');
+  var links = document.getElementById('navlinks');
+  toggle.addEventListener('click', function(){
+    var open = links.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  links.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){
+      links.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+    });
+  });
+
+  // Copy-to-clipboard for contact chips (no data leaves the page)
+  document.querySelectorAll('[data-copy]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var val = btn.getAttribute('data-copy');
+      var original = btn.textContent;
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(val).then(function(){
+          btn.textContent = 'copied';
+          setTimeout(function(){ btn.textContent = original; }, 1400);
+        });
+      }
+    });
+  });
+
+  // Terminal boot sequence (single orchestrated hero moment)
+  var lines = [
+    { prompt: 'whoami', out: 'sabeela.qureshi — soc analyst' },
+    { prompt: 'cat role.txt', out: 'threat detection · SIEM ops · security automation' },
+    { prompt: 'wazuh --status', out: 'FIM active · endpoints: nominal · alerts triaged via n8n' },
+    { prompt: 'ls certifications/', out: 'isc2-cc.cert  ctp-dwp.cert  linux100.cert' },
+    { prompt: 'echo $LOCATION', out: 'Lahore, Pakistan' }
+  ];
+  var body = document.getElementById('termBody');
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function renderStatic(){
+    body.innerHTML = '';
+    lines.forEach(function(l){
+      var p = document.createElement('p');
+      p.className = 'term-line';
+      p.innerHTML = '<span class="prompt">sabeela@soc$</span> ' + l.prompt + '<span class="out">' + l.out + '</span>';
+      body.appendChild(p);
+    });
+  }
+
+  if (reduceMotion) {
+    renderStatic();
+    return;
+  }
+
+  var li = 0;
+  function typeLine(){
+    if (li >= lines.length) return;
+    var lineData = lines[li];
+    var p = document.createElement('p');
+    p.className = 'term-line';
+    var promptSpan = document.createElement('span');
+    promptSpan.className = 'prompt';
+    promptSpan.textContent = 'sabeela@soc$ ';
+    p.appendChild(promptSpan);
+    var typed = document.createElement('span');
+    p.appendChild(typed);
+    var caret = document.createElement('span');
+    caret.className = 'caret';
+    p.appendChild(caret);
+    body.appendChild(p);
+
+    var chars = lineData.prompt.split('');
+    var ci = 0;
+    (function typeChar(){
+      if (ci < chars.length) {
+        typed.textContent += chars[ci];
+        ci++;
+        setTimeout(typeChar, 28);
+      } else {
+        caret.remove();
+        var out = document.createElement('span');
+        out.className = 'out';
+        out.textContent = lineData.out;
+        p.appendChild(out);
+        li++;
+        setTimeout(typeLine, 260);
+      }
+    })();
+  }
+  typeLine();
+})();
+</script>
+
+</body>
+</html>
